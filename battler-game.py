@@ -90,6 +90,9 @@ class Player():
                 if(status.effect=="shock"):
                     print(f'{self.name} was shocked and is unable to use an ability')
                     self.can_attack=False
+                if(status.effect=="pierce"):
+                    self.block=0
+                    print(f'{self.name}\'s block was destroyed...\n')
                 for e in self.statuses:
                     count+=1
                     if e.effect == status.effect:
@@ -108,7 +111,8 @@ class Player():
                 self.statuses.append(status)
                 print(f'Applied {status.amount} {status.effect} for {status.duration} turns\n')
         else:
-            print(f'\n-------{status.effect} failed to apply-------\n')
+            if(status.effect):
+                print(f'\n{Colors.RED}-------{status.effect} failed to apply-------{Colors.END}\n')
 
 
     def calculated_end_round_status_amount(self,target):
@@ -171,7 +175,7 @@ class Player():
             accuracy = game_field.calculate_accuracy(ab_type)
             if random() < accuracy and self.can_attack:
                 if(ab_name.lower()==ability_name.lower()):
-                    print(self.name+" used "+ab_name)
+                    print(Colors.BLUE+self.name+" used "+ab_name+Colors.END+"\n")
                     if(ab_type=="attack"):
                         if self.can_set_dam_mult(ab): 
                             total_damage=(ab_damage+self.upgrades["damage upgrade"])*self.dam_mult
@@ -184,7 +188,7 @@ class Player():
                         ab_block=ab.ability["block"]
                         total_block=ab_block+self.upgrades["block upgrade"]
                         self.block+=total_block
-                        print(self.name+" Adding "+str(ab_block)+" block,  Total Block: "+str(self.block))
+                        print(self.name+" Adding "+str(total_block)+" block,  Total Block: "+str(self.block))
 
                     if(ab_type=="special"):
                         ab_block=ab.ability["block"]
@@ -236,7 +240,7 @@ class Player():
                 print(f"{self.name} Can't attack this turn")
             else:
                 if((ab_type=='attack' or ab_type=='special') and ab_name.lower()==ability_name.lower()):
-                    print(f'{self.name} Missed While Using {ab_name}')
+                    print(f'{Colors.BLUE}{self.name} Missed While Using {ab_name}{Colors.END}')
                     
             self.can_attack=True
     
@@ -288,7 +292,9 @@ class Player():
             lost_health_symbol=red+"░"+end
         remaining_health_player=round(self.hp/self.max_hp * bars)
         lost_health_bars_player=bars-remaining_health_player
-        
+        statuses=""
+        for e in self.statuses:
+            statuses+=e.effect+" "+str(e.duration)
         
         print(f'{self.name} HP: {round(self.hp)}/{self.max_hp} Block: {self.block}')
         print(f'|{remaining_health_player*remaining_health_symbol}{lost_health_bars_player*lost_health_symbol}| \n')
@@ -349,8 +355,10 @@ class Player():
                 else:
                     # print(self.abilities_to_exclude)
                     # Ability.common_names.remove(random_ability_name)
-                    if len(self.abilities_to_exclude) == len(rarity_list_names):
+                    if len(self.abilities_to_exclude)+len(self.abilities) == len(rarity_list_names):
                         print(f'no more {rarity} abilities')
+                        print(self.abilities_to_exclude)
+                        print(rarity_list_names)
                         are_new_ability=False
                         break
 
@@ -365,9 +373,7 @@ class Wizard(Player):
         self.mana_regen=1
         self.class_name="Wizard"
         self.add_ability(Ability("tackle"))
-        self.strengths = ["Fire"]
-        self.weaknesses = ["Ice"]
-        print(self.hp)
+        # print(self.hp)
     
     def can_set_dam_mult(self,ability):
         mana_cost=ability.ability["mana cost"]
@@ -434,7 +440,7 @@ class Wizard(Player):
 
 
 class Knight(Player): #if block is higher than 10 do double damage
-    info="Knights have high base armor gain and always start with shield throw. Knights also do 2x damage when above 10 armor."
+    info="Knights have high base armor gain and always start with shield throw. Knights also do 2x damage when above 10 armor... NOT FINISHED"
     def __init__(self, name):
         super().__init__(name)
         # self.health = health
@@ -443,8 +449,6 @@ class Knight(Player): #if block is higher than 10 do double damage
         self.mana = 10
         self.mana_regen=0
         self.add_ability(Ability("shield throw"))
-        self.strengths = ["Fire"]
-        self.weaknesses = ["Ice"]
 
     def activate_ability(self, ability_name, target, game_field):
         if(ability_name.lower()=="shield throw"):
@@ -453,7 +457,7 @@ class Knight(Player): #if block is higher than 10 do double damage
         super().activate_ability(ability_name,target,game_field)
 
 class Rogue(Player): #
-    info="Rogue's have high evasion, but low health. Rogues always start with sneak attack and blind. Rogues do 2x damage when target is blinded or shocked"
+    info="Rogue's have high evasion, but low health. Rogues always start with sneak attack and blind. Rogues do 2x damage when target is blinded or shocked ... NOT FINISHED"
     def __init__(self, name):
         super().__init__(name)
         self.hp = self.hp/2
@@ -464,8 +468,7 @@ class Rogue(Player): #
         self.class_name="Rogue"
         # self.add_ability(Ability("sneak attack")) #does 2.5X damage when target is shocked or confused
         self.add_ability(Ability("blind"))
-        self.strengths = ["Fire"]
-        self.weaknesses = ["Ice"]
+        
     
 
 
@@ -483,18 +486,18 @@ class Ability():
     slash={"name":"Slash","type":"attack","block":0,"damage":8,"description":"A basic attack that deals 8 base damage","mana cost":0}
     fireball={"name":"Fireball","type":"special","block":0,"health":0,"damage":10,"description":"A magic attack that deals 10 base damage and has a 50% chance to inflict burn: 2 base damage per turn to opponent, can stack","status":{"effect":"burn","turns left":3,"amount":2,"chance":0.5},"mana cost":3}
     guard={"name":"Guard","type":"defend","damage":0,"speed":2,"block":4,"description":"An ability that gives 4 block (goes away at the start of your turn)","mana cost":0}
-    hp_sac={"name":"Hp sacrifice","type":"special","damage":15,"block":0,"health":-5,"description":"An attack that sacrifices 5 hearts to deal 18 damage","status":{"effect":"","turns left":0,"amount":0,"chance":0},"mana cost":2}
+    hp_sac={"name":"Hp sacrifice","type":"special","damage":15,"block":0,"health":-5,"description":"A special attack that sacrifices 5 hearts to deal 18 damage","status":{"effect":"","turns left":0,"amount":0,"chance":0},"mana cost":2}
     # reward abilities common
     uppercut={"name":"Uppercut","type":"attack","damage":15,"block":0,"description":"Uppercut that deals 15 damage","mana cost":0}
     # strenghten: next attack x1.5
     # reward abilities uncommon
     shield_throw={"name":"Shield throw","type":"special","damage":0,"block":0,"health":0,"description":"Throw your shield and do damage based on your block. All block is then removed","mana cost":0,"status":{"effect":"","turns left":0,"amount":0,"chance":0}}
 
-    heal={"name":"Heal","type":"special","damage":0,"block":0,"health":7,"description":"An uncommon ability that heals you for 7 (base) hp","status":{"effect":"","turns left":0,"amount":0,"chance":0},"mana cost":5}
+    heal={"name":"Heal","type":"special","damage":0,"block":0,"health":7,"description":"An uncommon ability that heals you for 7 (base) hp","status":{"effect":"","turns left":0,"amount":0,"chance":1.00},"mana cost":5}
     charge={"name":"Charge","type":"attack","damage":12,"description":"An uncommon attack that deals 12 base damage","mana cost":0}
     shield_bash={"name":"Shield bash","type":"special","damage":10,"block":5,"health":0,"description":"An uncommon ability that deals 10 base damage and gives 5 base block","mana cost":0,"status":{"effect":"weaken","turns left":1,"amount":0.5,"chance":0.25}}
     thunderbolt={"name":"Thunderbolt","type":"special","damage":10,"block":0,"health":0,"description":"A magic attack that deals 10 base damage and has a 25'%' chance to stun for 1 round","mana cost":3,"status":{"effect":"shock","turns left":1,"amount":1,"chance":0.30}}
-    pierce={"name":"Pierce","type":"special","damage":12,"block":0,"health":0,"description":"An uncommon ability that does 12 base damage and ignores block","mana cost":0,"status":{"effect":"","turns left":0,"amount":0,"chance":0}}
+    pierce={"name":"Pierce","type":"special","damage":12,"block":0,"health":0,"description":"An uncommon ability that does 12 base damage and ignores block","mana cost":0,"status":{"effect":"pierce","turns left":0,"amount":0,"chance":1.00}}
     #reward abilities epic
     allIn={"name":"All in","type":"special", "damage":50,"block":0,"description":"An epic Ability that does 50 base damage, but only has 3 uses.", "usesLeft":3,"mana cost":4,"status":{"effect":"shock","turns left":1,"amount":1,"chance":0.5},"health":0}
     hpRegen={"name":"Hp regen","type":"special","block":0, "damage":0,"description":"An epic Ability that heals you for 5 base health for 3 turns.","mana cost":8,"status":{"effect":"regen","turns left":3,"amount":5,"chance":1},"health":0}
@@ -549,15 +552,17 @@ class Ability():
 
 field_conditions={"weather":["Rainy","Sunny"],"terrain":["Mountain","Plains"]}
 while True:
-    name_input=input("Please Enter a Name: ")
-    if name_input.isalpha() and len(name_input) >0:
+    name_input=input("\nWelcome, Please Enter a Name: ")
+    cls()
+    if name_input.isalpha() and len(name_input)>0:
         name_input=name_input.capitalize()
         break
     else:
         print("Invalid input. Please enter a name with at least one letter.")
 
 while True:
-    print("Choose your class:\n\n\n")
+    cls()
+    print("\nChoose your class:\n\n")
     print(f"1. Wizard: {Wizard.info}\n")
     print(f"2. Rogue: {Rogue.info}\n")
     print(f"3. Knight: {Knight.info}\n")
@@ -576,7 +581,7 @@ while True:
 # player=Player("Nick")
 
 opp=Player("Opponent")
-upgrades=[{"name":"Damage Upgrade","amount":2},{"name":"Damage Upgrade","amount":5},{"name":"Block Upgrade","amount":3},{"name":"Max Hp Upgrade","amount":10},{"name":"Block Upgrade","amount":3},{"name":"Max Hp Upgrade","amount":20},{"name":"Heal","amount":20},{"name":"Heal","amount":50},{"name":"Block Upgrade","amount":10},{"name":"Damage Upgrade","amount":8},{"name":"Heal Upgrade","amount":2},{"name":"Status Upgrade","amount":2},{"name":"Status Upgrade","amount":4},{"name":"mana regen upgrade","amount":2},{"name":"mana regen upgrade","amount":1}]
+upgrades=[{"name":"Damage Upgrade","amount":2},{"name":"Damage Upgrade","amount":5},{"name":"Block Upgrade","amount":5},{"name":"Max Hp Upgrade","amount":10},{"name":"Block Upgrade","amount":3},{"name":"Max Hp Upgrade","amount":20},{"name":"Heal","amount":20},{"name":"Heal","amount":50},{"name":"Block Upgrade","amount":10},{"name":"Damage Upgrade","amount":8},{"name":"Heal Upgrade","amount":2},{"name":"Status Upgrade","amount":2},{"name":"Status Upgrade","amount":4},{"name":"mana regen upgrade","amount":2},{"name":"mana regen upgrade","amount":1}]
 round_number=0
 isPlaying=True
 while isPlaying:
@@ -587,7 +592,7 @@ while isPlaying:
     
     print("=========================================================================================================================")
     print("Choose your default ability: ")
-    act_ans=input(f'\n1.Slash--Description: {Ability.slash["description"]} \n\n2.Fireball--Description: {Ability.fireball["description"]}\n\n3.Hp Sacrifice--Description:  {Ability.hp_sac["description"]}\n\nEnter Ability Name or Number(1-3)')
+    act_ans=input(f'\n1.Slash--Description: {Ability.slash["description"]} \n\n2.Fireball--Description: {Ability.fireball["description"]}\n\n3.Hp Sacrifice--Description:  {Ability.hp_sac["description"]}\n\nEnter Ability Name or Number(1-3): ')
     
     if(not act_ans.lower() in ["slash","fireball","hp sacrifice","1","2","3"]):
         cls()
@@ -662,7 +667,7 @@ while isPlaying:
                 choose_ability=input("Choose an ability to use: ") 
                 cls()
                 print('\n')
-                print("====================================================================================")
+                print((Colors.LIGHT_GRAY+"▓"+Colors.END)*100)
                 
 
                 ab_in_player=False
@@ -679,6 +684,7 @@ while isPlaying:
                                 continue
                         ab_in_player=True
                 
+                # enter to use default ability
                 if(choose_ability==""):
                     ab_in_player=True
                     first_abil=player.abilities[1].ability["name"]
@@ -701,14 +707,15 @@ while isPlaying:
                     opp.block=0
                     break
                 elif(player.hp<=0):
-                    print("YOU LOSE... GAME OVER\n\n")
+                    cls()
+                    print(f"{Colors.RED}YOU LOSE... GAME OVER{Colors.RED}\n\n")
                     print(player)
                     break
                 player.calculated_end_round_status_amount(opp)
                 opp.activate_ability(opp_random,player,game_field)
                 opp.calculated_end_round_status_amount(player)
                 print(f'\n')
-                filler=input("Press Enter to Continue...\n\n========================================================================================\n")
+                filler=input(f'Press Enter to Continue...\n\n\n{(Colors.LIGHT_GRAY+"▓"+Colors.END)*100}\n\n')
             
 
 
@@ -717,12 +724,14 @@ while isPlaying:
         has_picked=False
         if(player.hp<=0):
             has_picked=True
-            print("YOU LOSE--GAME OVER\n\n")
+            cls()
+            print(f"{Colors.RED}YOU LOSE... GAME OVER{Colors.END}\n\n")
             break
         
         while(not has_picked):
             shuffle(upgrades)
             cls()
+            print(f'\n\n\n{Colors.LIGHT_GREEN}YOU WIN!{Colors.END}\n\n')
             print("CHOOSE YOUR REWARDS")
             print("1. "+upgrades[0]["name"]+" Amount: +"+str(upgrades[0]["amount"])+" ||| 2. "+upgrades[1]["name"]+" Amount: +"+str(upgrades[1]["amount"])+" ||| 3. "+upgrades[2]["name"]+ " Amount: +"+str(upgrades[2]["amount"]))
             print("\n")
@@ -730,7 +739,7 @@ while isPlaying:
             
             if(up_ans=="1" or up_ans=="2" or up_ans=='3'):
                 player.add_upgrade(upgrades[int(up_ans)-1]["name"],upgrades[int(up_ans)-1]["amount"])
-                print("ADDED UPGRADE: "+upgrades[int(up_ans)-1]["name"])
+                print(Colors.LIGHT_PURPLE+"\nADDED UPGRADE: "+upgrades[int(up_ans)-1]["name"]+Colors.END)
                 # print(player)
                 has_picked=True
             else:
@@ -739,9 +748,9 @@ while isPlaying:
             
             while True:
                 print("\n====================================================================================== \n")
-                print("CHOOSE A NEW ABILITY")
+                print("CHOOSE A NEW ABILITY\n")
                 player.reward_ability_three()
-                new_chosen_ability=input("")
+                new_chosen_ability=input("Choose Ability (1,2, or 3): ")
                 if new_chosen_ability=="1" or new_chosen_ability=="2" or new_chosen_ability=="3":
                     print(f'You Picked {player.abilites_to_choose_from[int(new_chosen_ability)-1]}' )
                     player.add_ability(player.abilites_to_choose_from[int(new_chosen_ability)-1])
